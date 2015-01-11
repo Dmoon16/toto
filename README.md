@@ -1,6 +1,6 @@
 # toto
 
-FIXME
+Distributed grocery list app for all your grocery list needs
 
 ## Prerequisites
 
@@ -10,10 +10,12 @@ You will need [Leiningen][1] 2.0 or above installed.
 
 ## Running
 
-To start a web server for the application, run:
+To start a web server for the application, run (we use http-kit):
 
-    lein ring server
+    lein run
 
 ## License
 
-Copyright © 2015 FIXME
+MIT license. Do whatever you want with this.
+
+Copyright © 2015
