@@ -1,10 +1,10 @@
 (defproject
   toto
-  "0.1.0-SNAPSHOT"
+  "0.1.1"
   :description
-  "FIXME: write description"
+  "Distributed shop list"
   :url
-  "http://example.com/FIXME"
+  "http://whitecitycode.com"
   :dependencies
   [[prone "0.8.0"]
    [selmer "0.7.7"]

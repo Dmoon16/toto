@@ -136,32 +136,59 @@ app.factory('TotoSvc', function($window, $q){
 });
 
 app.factory('TotoWs', function(TotoSvc, $q) {
-  var ws = new WebSocket("ws://localhost:3000/sync/");
-    
-  ws.onopen = function(){  
-      console.log("Socket has been opened!");  
-  };
-  
-  ws.onmessage = function(message) {
-      listener(JSON.parse(message.data));
-  };
+  var ws;
 
-  function sendRequest(request) {
+  /**
+   * Opens a websocket connection
+   */
+  function open() {
     var defer = $q.defer();
-    var callbackId = getCallbackId();
-    callbacks[callbackId] = {
-      time: new Date(),
-      cb:defer
+    if (!ws || ws.readyState != 1) {
+      ws = new WebSocket("ws://" + BASEURL + "/sync/");
+      ws.onerror = function (error) {
+        defer.reject('Could not open websocket');
+      };
+
+      ws.onclose = function (e) {
+        console.error("Reason: ", e.reason);
+        defer.reject('Websocket closed');
+      };       
+    
+      ws.onopen = function(e){  
+          console.log("Socket has been opened!"); 
+          ws = e.target.result;
+          defer.resolve(); 
+      };
+    }
+
+    ws.onmessage = function(message) {
+        syncDown(JSON.parse(message.data));
     };
-    request.callback_id = callbackId;
-    console.log('Sending request', request);
-    ws.send(JSON.stringify(request));
+
     return defer.promise;
   }
 
-  function listener(data) {
+  function syncUp() {
+    var defer = $q.defer();
+    if (!ws || ws.readyState != 1) {
+      defer.reject('Connection not opened');
+      return defer.promise;
+    }
+    TotoSvc.getTodos().then(function (data) {
+      ws.send(JSON.stringify(data));
+      defer.resolve();
+    });
+    return defer.promise;
+  }
+
+  function syncDown(data) {
     var messageObj = data;
     console.log("Received data from websocket: ", messageObj);
+  }
+
+  return {
+    open: open,
+    syncUp: syncUp
   }
   
 });
@@ -170,14 +197,13 @@ app.config(function($interpolateProvider) {
   $interpolateProvider.startSymbol('{[{').endSymbol('}]}');
 });
 
-app.controller('TotoController', function($window, TotoSvc){
+app.controller('TotoController', function($window, TotoSvc, TotoWs){
   var vm = this;
   vm.todos=[];
   
   vm.refreshList = function(){
     TotoSvc.getTodos().then(function(data){
       vm.todos=data;
-      console.log(data);
     }, function(err){
       $window.alert(err);
     });
@@ -201,7 +227,10 @@ app.controller('TotoController', function($window, TotoSvc){
   };
   
   function init(){
-    TotoSvc.open().then(function(){
+    TotoSvc.open().then(function () {
+      TotoWs.open().then(TotoWs.syncUp());
+    })
+    .then(function(){
       vm.refreshList();
     });
   }

@@ -14,7 +14,8 @@
             [cronj.core :as cronj]))
 
 (defroutes base-routes
-  (route/resources "/")
+  ; (route/resources "")
+  (route/files "" {:root "resources"})
   (route/not-found "Not Found"))
 
 (defn init
