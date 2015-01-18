@@ -125,12 +125,39 @@ app.factory('TotoSvc', function($window, $q){
     }
     return deferred.promise;
   };
+
+  var replaceTodos = function(todos){
+    var deferred = $q.defer();
+    
+    if(db === null){
+      deferred.reject("IndexDB is not opened yet!");
+    }
+    else{
+      var trans = db.transaction(["todo"], "readwrite");
+      var store = trans.objectStore("todo");
+      lastIndex++;
+      var request = store.clear();    
+      request.onsuccess = function(e) {
+        _.each(todos, function (todo) {
+          addTodo(todo);
+        });
+        deferred.resolve();
+      };
+    
+      request.onerror = function(e) {
+        console.log(e.value);
+        deferred.reject("Todos couldn't be replaced!");
+      };
+    }
+    return deferred.promise;
+  };
   
   return {
     open: open,
     getTodos: getTodos,
     addTodo: addTodo,
-    deleteTodo: deleteTodo
+    deleteTodo: deleteTodo,
+    replaceTodos: replaceTodos
   };
   
 });
@@ -141,6 +168,7 @@ app.config(function($interpolateProvider) {
 
 app.controller('TotoController', function($window, TotoSvc, $websocket){
   var vm = this;
+  vm.ws = null;
   vm.todos=[];
   
   vm.refreshList = function(){
@@ -155,6 +183,7 @@ app.controller('TotoController', function($window, TotoSvc, $websocket){
     TotoSvc.addTodo(vm.todoText).then(function(){
       vm.refreshList();
       vm.todoText="";
+      vm.syncUp();
     }, function(err){
       $window.alert(err);
     });
@@ -163,33 +192,41 @@ app.controller('TotoController', function($window, TotoSvc, $websocket){
   vm.deleteTodo = function(id){
     TotoSvc.deleteTodo(id).then(function(){
       vm.refreshList();
+      vm.syncUp();
     }, function(err){
       $window.alert(err);
     });
   };
+
+  vm.syncUp = function () {
+    console.debug('Socket opened');
+    TotoSvc.open()
+    .then( function () {
+      TotoSvc.getTodos().then(
+        function (data) {  
+          var toSend = _.pluck(data, "text");
+          console.debug('Sending info', toSend);      
+          vm.ws.$emit('syncup', toSend);
+        });
+      vm.refreshList();
+    });
+  }
   
   function init(){
-
-    var ws = $websocket.$new({
+    vm.ws = $websocket.$new({
       url: "ws://" + BASEURL + "/sync"
     });
-    ws.$on('syncup', function (received) {
+    vm.ws.$on('syncup', function (received) {
+      TotoSvc.open().then(function (){
+        TotoSvc.replaceTodos(received);
+      });
       console.info("Received data: ", received);
     })
     .$on('$close', function () {
       console.info('Connection closed');
     })
-    .$on('$open', function () {      
-      console.debug('Socket opened');
-      TotoSvc.open()
-      .then( function () {
-        TotoSvc.getTodos().then(
-          function (data) {  
-            console.debug('Sending info', data);      
-            ws.$emit('syncup', data);
-          });
-        vm.refreshList();
-      });
+    .$on('$open', function () {
+      vm.syncUp();
     });
   }
   
