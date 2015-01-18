@@ -11,7 +11,6 @@
                  [org.clojure/tools.cli "0.2.2"]
                  [compojure "1.1.5"]
                  [ring/ring-core "1.1.8"]
-                 [ring/ring-devel "1.1.8"]
                  [org.clojure/data.json "0.2.1"]
                  [http-kit "2.1.16"]
 

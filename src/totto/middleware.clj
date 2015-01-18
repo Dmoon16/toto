@@ -2,7 +2,6 @@
     (:use [compojure.core :only [GET POST DELETE PUT]]
           [clojure.tools.logging :only [debug error info]]
           [totto.config :as conf]
-          [ring.middleware.reload :as reload]
           [clojure.data.json :only [write-str]]))
 
 (defn wrap-failsafe [handler]
@@ -30,7 +29,7 @@
   (if (= (conf/cfg :profile) :dev)
     (fn [req]
       (require :reload 'totto.tmpls) ; reload templates
-      ((reload/wrap-reload handler) req))
+      (handler req))
     handler))
 
 (defn json-response [resp]
