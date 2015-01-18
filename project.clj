@@ -1,49 +1,35 @@
-(defproject
-  toto
-  "0.1.1"
-  :description
-  "Distributed shop list"
-  :url
-  "http://whitecitycode.com"
-  :dependencies
-  [[prone "0.8.0"]
-   [selmer "0.7.7"]
-   [com.taoensso/tower "3.0.2"]
-   [markdown-clj "0.9.58" :exclusions [com.keminglabs/cljx]]
-   [im.chit/cronj "1.4.3"]
-   [com.taoensso/timbre "3.3.1"]
-   [noir-exception "0.2.3"]
-   [http-kit "2.1.19"]
-   [lib-noir "0.9.5"]
-   [org.clojure/clojure "1.6.0"]
-   [environ "1.0.0"]
-   [ring-server "0.3.1"]]
-  :repl-options
-  {:init-ns toto.repl}
-  :jvm-opts
-  ["-server"]
-  :plugins
-  [[lein-ring "0.9.0"] [lein-environ "1.0.0"] [lein-ancient "0.5.5"]]
-  :ring
-  {:handler toto.handler/app,
-   :init toto.handler/init,
-   :destroy toto.handler/destroy}
-  :profiles
-  {:uberjar {:omit-source true, :env {:production true}, :aot :all},
-   :production
-   {:ring
-    {:open-browser? false, :stacktraces? false, :auto-reload? false}},
-   :dev
-   {:dependencies
-    [[ring-mock "0.1.5"]
-     [ring/ring-devel "1.3.2"]
-     [pjstadig/humane-test-output "0.6.0"]],
-    :injections
-    [(require 'pjstadig.humane-test-output)
-     (pjstadig.humane-test-output/activate!)],
-    :env {:dev true}}}
-  :uberjar-name
-  "toto.jar"
-  :main
-  toto.core
-  :min-lein-version "2.0.0")
+(defproject totto "0.1.1"
+  :description "Distributed stuff"
+  :url "http://example.com/FIXME"
+  :license {:name "Eclipse Public License"
+            :url "http://www.eclipse.org/legal/epl-v10.html"}
+  :main totto.main
+  :aot [totto.main]
+  :uberjar-name "totto-standalone.jar"
+  ;; :plugins [[lein-swank "1.4.4"]]
+  :dependencies [[org.clojure/clojure "1.5.1"]
+                 [org.clojure/tools.cli "0.2.2"]
+                 [compojure "1.1.5"]
+                 [ring/ring-core "1.1.8"]
+
+                 [org.clojure/data.json "0.2.1"]
+
+                 [http-kit "2.1.16"]
+
+                 [http-kit/dbcp "0.1.0"] ;; database access
+
+                 [mysql/mysql-connector-java "5.1.21"] ;; mysql jdbc driver
+
+                 ;; [org.fressian/fressian "0.6.3"]
+
+                 ;; for serialization clojure object to bytes
+                 ;; [com.taoensso/nippy "1.1.0"]
+
+                 ;; Redis client & message queue
+                 ;; [com.taoensso/carmine "1.5.0"]
+
+                 ;; logging,  another option [com.taoensso/timbre "1.5.2"]
+                 [org.clojure/tools.logging "0.2.6"]
+                 [ch.qos.logback/logback-classic "1.0.1"]
+                 ;; template
+                 [me.shenfeng/mustache "1.1"]])

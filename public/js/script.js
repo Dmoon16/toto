@@ -1,4 +1,4 @@
-var app = angular.module('Toto', []);
+var app = angular.module('Toto', ['ngWebsocket']);
 
 app.factory('TotoSvc', function($window, $q){
   var indexedDB = $window.indexedDB;
@@ -135,69 +135,11 @@ app.factory('TotoSvc', function($window, $q){
   
 });
 
-app.factory('TotoWs', function(TotoSvc, $q) {
-  var ws;
-
-  /**
-   * Opens a websocket connection
-   */
-  function open() {
-    var defer = $q.defer();
-    if (!ws || ws.readyState != 1) {
-      ws = new WebSocket("ws://" + BASEURL + "/sync/");
-      ws.onerror = function (error) {
-        defer.reject('Could not open websocket');
-      };
-
-      ws.onclose = function (e) {
-        console.error("Reason: ", e.reason);
-        defer.reject('Websocket closed');
-      };       
-    
-      ws.onopen = function(e){  
-          console.log("Socket has been opened!"); 
-          ws = e.target.result;
-          defer.resolve(); 
-      };
-    }
-
-    ws.onmessage = function(message) {
-        syncDown(JSON.parse(message.data));
-    };
-
-    return defer.promise;
-  }
-
-  function syncUp() {
-    var defer = $q.defer();
-    if (!ws || ws.readyState != 1) {
-      defer.reject('Connection not opened');
-      return defer.promise;
-    }
-    TotoSvc.getTodos().then(function (data) {
-      ws.send(JSON.stringify(data));
-      defer.resolve();
-    });
-    return defer.promise;
-  }
-
-  function syncDown(data) {
-    var messageObj = data;
-    console.log("Received data from websocket: ", messageObj);
-  }
-
-  return {
-    open: open,
-    syncUp: syncUp
-  }
-  
-});
-
 app.config(function($interpolateProvider) {  
   $interpolateProvider.startSymbol('{[{').endSymbol('}]}');
 });
 
-app.controller('TotoController', function($window, TotoSvc, TotoWs){
+app.controller('TotoController', function($window, TotoSvc, $websocket){
   var vm = this;
   vm.todos=[];
   
@@ -227,11 +169,27 @@ app.controller('TotoController', function($window, TotoSvc, TotoWs){
   };
   
   function init(){
-    TotoSvc.open().then(function () {
-      TotoWs.open().then(TotoWs.syncUp());
+
+    var ws = $websocket.$new({
+      url: "ws://" + BASEURL + "/sync"
+    });
+    ws.$on('syncup', function (received) {
+      console.info("Received data: ", received);
     })
-    .then(function(){
-      vm.refreshList();
+    .$on('$close', function () {
+      console.info('Connection closed');
+    })
+    .$on('$open', function () {      
+      console.debug('Socket opened');
+      TotoSvc.open()
+      .then( function () {
+        TotoSvc.getTodos().then(
+          function (data) {  
+            console.debug('Sending info', data);      
+            ws.$emit('syncup', data);
+          });
+        vm.refreshList();
+      });
     });
   }
   
