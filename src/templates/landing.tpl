@@ -58,8 +58,8 @@
               </thead>
               <tbody>
                 <tr data-ng-repeat="todo in vm.todos">
-                  <td><p class="text-capitalize">{[{ todo.text }]}</p></td>
-                  <td><a class="btn btn-small btn-danger" href="#" data-ng-click="vm.deleteTodo(todo.id)">Sterge</a></td>
+                  <td width="60%"><p class="text-capitalize">{[{ todo.text }]}</p></td>
+                  <td><!--<a class="btn btn-small btn-danger" href="#" data-ng-click="vm.deleteTodo(todo.id)">Sterge</a>--></td>
                 </tr>
               </tbody>
             </table>

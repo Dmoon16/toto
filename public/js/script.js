@@ -7,7 +7,7 @@ app.factory('TotoSvc', function($window, $q){
   
   var open = function(){
     var deferred = $q.defer();
-    var version = 1;
+    var version = 2;
     var request = indexedDB.open("todoData", version);
   
     request.onupgradeneeded = function(e) {
@@ -20,7 +20,7 @@ app.factory('TotoSvc', function($window, $q){
       }
   
       var store = db.createObjectStore("todo",
-        {keyPath: "id"});
+        { keyPath: "id", autoIncrement : true });
     };
   
     request.onsuccess = function(e) {
@@ -108,9 +108,7 @@ app.factory('TotoSvc', function($window, $q){
     else{
       var trans = db.transaction(["todo"], "readwrite");
       var store = trans.objectStore("todo");
-      lastIndex++;
-      var request = store.put({
-        "id": lastIndex,
+      var request = store.add({
         "text": todoText
       });
     
@@ -199,16 +197,15 @@ app.controller('TotoController', function($window, TotoSvc, $websocket){
   };
 
   vm.syncUp = function () {
-    console.debug('Socket opened');
     TotoSvc.open()
     .then( function () {
       TotoSvc.getTodos().then(
         function (data) {  
           var toSend = _.pluck(data, "text");
-          console.debug('Sending info', toSend);      
+          console.debug('Syncing up info', toSend);      
           vm.ws.$emit('syncup', toSend);
+          vm.refreshList();
         });
-      vm.refreshList();
     });
   }
   
@@ -216,9 +213,11 @@ app.controller('TotoController', function($window, TotoSvc, $websocket){
     vm.ws = $websocket.$new({
       url: "ws://" + BASEURL + "/sync"
     });
-    vm.ws.$on('syncup', function (received) {
+    vm.ws.$on('syncdown', function (received) {
       TotoSvc.open().then(function (){
-        TotoSvc.replaceTodos(received);
+        TotoSvc.replaceTodos(received).then(function(){
+          vm.refreshList();
+        });
       });
       console.info("Received data: ", received);
     })
